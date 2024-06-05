@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// Product, Category and Order
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StatusType {
+  PENDING
+  PREPARING
+  READY
+  DELIVERED
+
+  @@map("status_type")
+}
+
+model Order {
+  id         String         @id @default(uuid()) @db.Uuid
+  orderId    Int            @unique @default(autoincrement())
+  status     StatusType     @default(PENDING)
+  created_at DateTime       @default(now())
+  deleted_at DateTime?
+  updated_at DateTime       @updatedAt
+  products   OrderProduct[]
+
+  @@map("orders")
+}
+
+model Favorite {
+  id         String            @id @default(uuid()) @db.Uuid
+  created_at DateTime          @default(now())
+  deleted_at DateTime?
+  products   FavoriteProduct[]
+
+  @@map("favorites")
+}
+
+model Category {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String    @unique
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+  updated_at DateTime  @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique
+  description String
+  price       Float
+  created_at  DateTime  @default(now())
+  deleted_at  DateTime?
+  updated_at  DateTime  @updatedAt
+
+  category         Category          @relation(fields: [categoryId], references: [id])
+  categoryId       String            @db.Uuid
+  orderProduct     OrderProduct[]
+  favoriteProducts FavoriteProduct[]
+
+  @@map("products")
+}
+
+model OrderProduct {
+  orderId   String @db.Uuid
+  productId String @db.Uuid
+  quantity  Int
+
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  favoriteId String? @db.Uuid
+
+  @@id([orderId, productId])
+  @@map("order_products")
+}
+
+model FavoriteProduct {
+  favoriteId String @db.Uuid
+  productId  String @db.Uuid
+
+  favorite Favorite @relation(fields: [favoriteId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([favoriteId, productId])
+  @@map("favorite_products")
+}
