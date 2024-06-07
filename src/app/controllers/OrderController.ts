@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 
 import { OrderStatus } from '../models/Order';
 import { ordersRepository as OrdersRepository } from '../repositories/OrdersRepository';
+import { productsRepository as ProductsRepository } from '../repositories/ProductsRepository';
 
 export interface OrderFilters {
   direction: 'asc' | 'desc'
@@ -9,6 +10,11 @@ export interface OrderFilters {
   orderId: string
   pageIndex: string
   pageSize: string
+}
+
+interface ProductBody {
+  productId: string
+  quantity: number
 }
 
 class OrderController {
@@ -50,12 +56,47 @@ class OrderController {
       return res.status(400).json({ error: 'All fields are required' })
     }
 
+    const hasStock = async (products: ProductBody[]): Promise<{ result: boolean, error?: string }> => {
+      for (const product of products) {
+        const stock = await ProductsRepository
+          .findProductStock(product.productId) ?? { stock: 0, name: '' };
+        if (stock?.stock < product.quantity) {
+          return { result: false, error: `Insufficient stock for product ${stock.name}` };
+        }
+      }
+      return { result: true };
+    };
+
+    const { result, error } = await hasStock(products);
+
+    if (!result) {
+      return res.status(400).json({ error });
+    }
+
     const order = await OrdersRepository.create({ products })
 
-    res.status(201).json({
-      ...order,
-      quantity: order.products.reduce((acc, product) => acc + product.quantity, 0)
-    })
+    const adjustStock = async (products: ProductBody[]): Promise<void> => {
+      for (const product of products) {
+        const stock = await ProductsRepository
+          .findProductStock(product.productId) ?? { stock: 0 };
+
+        const newStock = stock?.stock - product.quantity ?? 0;
+
+        await ProductsRepository.updateStock(product.productId, newStock);
+      }
+    };
+
+    try {
+      await adjustStock(products);
+  
+      res.status(201).json({
+        ...order,
+        quantity: order.products.reduce((acc, product) => acc + product.quantity, 0)
+      })
+
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to adjust stock after creating order." })
+    }
   }
 
   // Editar um registro

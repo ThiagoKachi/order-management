@@ -45,6 +45,33 @@ class ProductsRepository {
     return product
   }
 
+  async findProductStock(id: string) {    
+    const product = await prisma.product.findFirst({
+      where: {
+        id,
+      },
+      select: {
+        stock: true,
+        name: true
+      }
+    })
+
+    return product
+  }
+
+  async updateStock(id: string, newStock: number) {   
+    const product = await prisma.product.update({
+      where: {
+        id,
+      },
+      data: {
+        stock: newStock
+      }
+    })
+
+    return product
+  }
+
   async findByName(name: string) {    
     const product = await prisma.product.findUnique({
       where: {
@@ -55,13 +82,15 @@ class ProductsRepository {
     return product
   }
 
-  async create({ name, description, price, categoryId }: Product) {
+  async create({ name, description, price, categoryId, image, stock }: Product) {
     const product = await prisma.product.create({
       data: {
         name,
         description,
         price,
         categoryId: categoryId,
+        product_image: image,
+        stock
       }
     })
 

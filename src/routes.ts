@@ -17,6 +17,7 @@ router.delete('/category/:id', CategoryController.delete);
 // Products
 router.get('/product', ProductController.index);
 router.get('/product/:id', ProductController.show);
+router.get('/product/stock/:id', ProductController.productStock);
 router.post('/product', ProductController.store);
 router.put('/product/:id', ProductController.update);
 router.delete('/product/:id', ProductController.delete);

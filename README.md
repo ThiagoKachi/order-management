@@ -1,6 +1,6 @@
 ## Sistema de Gerenciamento de Pedidos
 
-#### Descrição: Um sistema para gerenciar pedidos em um restaurante ou loja online.    
+#### Descrição: Um sistema para gerenciar pedidos em um restaurante.    
 - Rotas da aplicação:
   #### Produtos
   - [x] **POST** **`/api/product`** - Criar um novo produto.
@@ -57,19 +57,17 @@
         - Produtos mais vendidos -->
 
 <!-- Estoque de produtos
-  Colocar estoque no banco (default 0)
-  Ao criar produto pode criar com estoque
-  Ao editar produto pode editar o estoque
-  Quando criar uma order, verifica se tem o estoque disponível
-  Ao criar order, diminuir o estoque
+  Colocar estoque no banco (default 0) (Produto) ✅
+  Ao criar produto pode criar com estoque ✅
+  Ao editar produto pode editar o estoque ✅
+  Quando criar uma order, verifica se tem o estoque disponível ✅
+  Ao criar ou editar order, ajusta o estoque ✅
 -->
-<!-- Adicionar foto(1) nos produtos -->
 
+<!-- Adicionar foto(1) nos produtos --> ✅
 <!-- Favoritos (Produtos) --> ✅
 <!-- Paginação das listas --> ✅
 <!-- Ordenar por preço do produto --> ✅
 <!-- Na order, criar um ID (Sequencial) e filtrar pelo mesmo --> ✅
 <!-- Ajustar a tipagem dos filtros (tirar "as") --> ✅
-<!-- Remover um produto específico do pedido ✅
-  - Produto não pode ser deletado se o status igual a "DELIVERED" 
--->
+<!-- Remover um produto específico do pedido --> ✅

@@ -41,9 +41,22 @@ class ProductController {
     return res.json(product)
   }
 
+  // Obter o estoque de um produto
+  async productStock(req: Request, res: Response) {
+    const { id } = req.params
+
+    const product = await ProductsRepository.findProductStock(id)
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+
+    return res.json(product)
+  }
+
   // Criar novo registro
   async store(req: Request, res: Response) {
-    const { name, description, price, categoryId } = req.body
+    const { name, description, price, categoryId, image, stock } = req.body
 
     const productExists = await ProductsRepository.findByName(name)
 
@@ -51,7 +64,7 @@ class ProductController {
       return res.status(404).json({ error: 'Product already in use!' })
     }
 
-    if (!name || !description || !price || !categoryId) {
+    if (!name || !description || !price || !categoryId || !stock) {
       return res.status(400).json({ error: 'All fields are required' })
     }
 
@@ -60,6 +73,8 @@ class ProductController {
       description,
       price,
       categoryId,
+      image,
+      stock
     })
 
     res.status(201).json(product)
@@ -68,15 +83,9 @@ class ProductController {
   // Editar um registro
   async update(req: Request, res: Response) {
     const { id } = req.params
-    const { name, description, price, categoryId } = req.body
+    const { name, description, price, categoryId, image, stock } = req.body
 
-    const productExists = await ProductsRepository.findByName(name)
-
-    if (productExists) {
-      return res.status(404).json({ error: 'Product already in use!' })
-    }
-
-    if (!name || !description || !price || !categoryId) {
+    if (!name || !description || !price || !categoryId || !stock) {
       return res.status(400).json({ error: 'All fields are required' })
     }
 
@@ -84,7 +93,9 @@ class ProductController {
       name,
       description,
       price,
-      categoryId
+      categoryId,
+      image,
+      stock
     })
 
     res.json(product)
