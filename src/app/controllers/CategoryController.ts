@@ -6,6 +6,7 @@ class CategoryController {
   // Listar todos os registros
   async index(req: Request, res: Response) {
     const { orderBy } = req.query
+
     const categories = await CategoriesRepository.findAll(orderBy as string)
 
     res.json(categories)

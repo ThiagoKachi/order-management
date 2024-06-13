@@ -24,6 +24,15 @@ enum StatusType {
   @@map("status_type")
 }
 
+model Account {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  email    String @unique
+  password String
+
+  @@map("accounts")
+}
+
 model Order {
   id         String         @id @default(uuid()) @db.Uuid
   orderId    Int            @unique @default(autoincrement())

@@ -49,14 +49,18 @@
 - Postgres SQL - Docker
 - Prisma ORM
 
-<!-- Usuários / Auth -->
+<!-- Usuários / Auth --> ✅
+
+<!-- Limpar o BD -->
+<!-- Criar relacionamento de contas no BD -->
+<!-- Ao fazer buscar e cadastrar itens, relacionar a Conta -->
 <!-- Gerar relatório de vendas. (ID do usuário)
     - Relatórios de vendas
         - Quantidade total de itens vendidos
         - Receita total gerada
         - Produtos mais vendidos -->
 
-<!-- Estoque de produtos
+<!-- Estoque de produtos ✅
   Colocar estoque no banco (default 0) (Produto) ✅
   Ao criar produto pode criar com estoque ✅
   Ao editar produto pode editar o estoque ✅
