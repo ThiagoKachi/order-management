@@ -25,10 +25,14 @@ enum StatusType {
 }
 
 model Account {
-  id       String @id @default(uuid()) @db.Uuid
-  name     String
-  email    String @unique
-  password String
+  id              String            @id @default(uuid()) @db.Uuid
+  name            String
+  email           String            @unique
+  password        String
+  orders          Order[]
+  products        Product[]
+  favorites       Favorite[]
+  FavoriteProduct FavoriteProduct[]
 
   @@map("accounts")
 }
@@ -42,6 +46,9 @@ model Order {
   updated_at DateTime       @updatedAt
   products   OrderProduct[]
 
+  account   Account @relation(fields: [accountId], references: [id])
+  accountId String  @db.Uuid
+
   @@map("orders")
 }
 
@@ -50,6 +57,9 @@ model Favorite {
   created_at DateTime          @default(now())
   deleted_at DateTime?
   products   FavoriteProduct[]
+
+  account   Account @relation(fields: [accountId], references: [id])
+  accountId String  @db.Uuid
 
   @@map("favorites")
 }
@@ -60,8 +70,7 @@ model Category {
   created_at DateTime  @default(now())
   deleted_at DateTime?
   updated_at DateTime  @updatedAt
-
-  products Product[]
+  products   Product[]
 
   @@map("categories")
 }
@@ -81,6 +90,9 @@ model Product {
   categoryId       String            @db.Uuid
   orderProduct     OrderProduct[]
   favoriteProducts FavoriteProduct[]
+
+  account   Account @relation(fields: [accountId], references: [id])
+  accountId String  @db.Uuid
 
   @@map("products")
 }
@@ -102,8 +114,10 @@ model FavoriteProduct {
   favoriteId String @db.Uuid
   productId  String @db.Uuid
 
-  favorite Favorite @relation(fields: [favoriteId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  favorite  Favorite @relation(fields: [favoriteId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  account   Account  @relation(fields: [accountId], references: [id])
+  accountId String   @db.Uuid
 
   @@id([favoriteId, productId])
   @@map("favorite_products")

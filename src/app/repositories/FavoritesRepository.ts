@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 class FavoritesRepository {
-  async findAll(orderBy = 'asc') {
+  async findAll(orderBy = 'asc', userId: string) {
     const direction = orderBy === 'desc' ? 'desc' : 'asc'
     
     const favorites = await prisma.favorite.findMany({
@@ -11,7 +11,8 @@ class FavoritesRepository {
         created_at: direction
       },
       where: {
-        deleted_at: null
+        deleted_at: null,
+        accountId: userId
       },
       include: {
         products: {
@@ -32,9 +33,10 @@ class FavoritesRepository {
       }))
   }
 
-  async findOne(id: string) {    
+  async findOne(id: string, userId: string) {    
     const product = await prisma.favoriteProduct.findFirst({
       where: {
+        accountId: userId,
         productId: id,
       }
     })
@@ -42,23 +44,29 @@ class FavoritesRepository {
     return product
   }
 
-  async isProductFavorited(productId: string) {
+  async isProductFavorited(productId: string, userId: string) {
     return await prisma.favoriteProduct.findFirst({
-      where: { productId },
+      where: { productId, accountId: userId },
     });
   }
 
-  async create(productId: string) {    
+  async create(productId: string, userId: string) {   
     const favorite = await prisma.favorite.create({
       data: {
+        accountId: userId,
         products: {
           create: {
              product: {
               connect: {
                 id: productId
               }
+            },
+            account: {
+              connect: {
+                id: userId
+              }
             }
-          }
+          },
         },
       },
     })
@@ -66,17 +74,24 @@ class FavoritesRepository {
     return { favoriteId: favorite.id }
   }
 
-  async delete(id: string) {    
-    const favorite = await prisma.favorite.update({
+  async delete(id: string, userId: string) {
+    const favoriteProduct = await prisma.favoriteProduct.findFirst({
       where: {
-        id
-      },
-      data: {
-        deleted_at: new Date()
+        productId: id,
+        accountId: userId,
       }
-    })
+    });
 
-    return favorite
+    const deletedFavoriteProduct = await prisma.favoriteProduct.delete({
+      where: {
+        favoriteId_productId: {
+          favoriteId: favoriteProduct?.favoriteId!,
+          productId: id,
+        }
+      }
+    });
+
+    return deletedFavoriteProduct
   }
 }
 

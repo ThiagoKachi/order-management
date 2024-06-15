@@ -13,6 +13,8 @@ export interface ProductFilters {
 class ProductController {
   // Listar todos os registros
   async index(req: Request, res: Response) {
+    const userId = req.userId
+    
     const { orderByField, direction, productName, pageIndex, pageSize } = req.query
 
     const filters = {
@@ -23,16 +25,18 @@ class ProductController {
       pageSize,
     } as ProductFilters
 
-    const products = await ProductsRepository.findAll(filters)
+    const products = await ProductsRepository.findAll(filters, userId!)
 
     res.json(products)
   }
 
   // Obter um registro
   async show(req: Request, res: Response) {
+    const userId = req.userId!
+
     const { id } = req.params
 
-    const product = await ProductsRepository.findOne(id)
+    const product = await ProductsRepository.findOne(id, userId)
 
     if (!product) {
       return res.status(404).json({ error: 'Product not found' })
@@ -43,9 +47,10 @@ class ProductController {
 
   // Obter o estoque de um produto
   async productStock(req: Request, res: Response) {
+    const userId = req.userId!
     const { id } = req.params
 
-    const product = await ProductsRepository.findProductStock(id)
+    const product = await ProductsRepository.findProductStock(id, userId)
 
     if (!product) {
       return res.status(404).json({ error: 'Product not found' })
@@ -56,9 +61,10 @@ class ProductController {
 
   // Criar novo registro
   async store(req: Request, res: Response) {
+    const userId = req.userId!
     const { name, description, price, categoryId, image, stock } = req.body
 
-    const productExists = await ProductsRepository.findByName(name)
+    const productExists = await ProductsRepository.findByName(name, userId)
 
     if (productExists) {
       return res.status(404).json({ error: 'Product already in use!' })
@@ -74,7 +80,8 @@ class ProductController {
       price,
       categoryId,
       image,
-      stock
+      stock,
+      accountId: userId!
     })
 
     res.status(201).json(product)
@@ -83,7 +90,14 @@ class ProductController {
   // Editar um registro
   async update(req: Request, res: Response) {
     const { id } = req.params
+    const userId = req.userId!
     const { name, description, price, categoryId, image, stock } = req.body
+
+    const productExists = await ProductsRepository.findOne(id, userId)
+
+    if (!productExists) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
 
     if (!name || !description || !price || !categoryId || !stock) {
       return res.status(400).json({ error: 'All fields are required' })
@@ -95,7 +109,8 @@ class ProductController {
       price,
       categoryId,
       image,
-      stock
+      stock,
+      accountId: userId!
     })
 
     res.json(product)
@@ -103,15 +118,16 @@ class ProductController {
 
   // Deletar um registro
   async delete(req: Request, res: Response) {
+    const userId = req.userId!
     const { id } = req.params
 
-    const productExists = await ProductsRepository.findOne(id)
+    const productExists = await ProductsRepository.findOne(id, userId)
 
     if (!productExists) {
       return res.status(404).json({ error: 'Product not found' })
     }
 
-    await ProductsRepository.delete(id)
+    await ProductsRepository.delete(id, userId)
 
     res.sendStatus(204)
   }

@@ -20,6 +20,8 @@ interface ProductBody {
 class OrderController {
   // Listar todos os registros
   async index(req: Request, res: Response) {
+    const userId = req.userId!
+
     const { direction, status, orderId, pageIndex, pageSize } = req.query
 
     const orderFilters = {
@@ -30,16 +32,18 @@ class OrderController {
       pageSize,
     } as OrderFilters
 
-    const orders = await OrdersRepository.findAll(orderFilters)
+    const orders = await OrdersRepository.findAll(orderFilters, userId)
 
     res.json(orders)
   }
 
   // Obter um registro
   async show(req: Request, res: Response) {
+    const userId = req.userId!
+
     const { id } = req.params
 
-    const order = await OrdersRepository.findOne(id)
+    const order = await OrdersRepository.findOne(id, userId)
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' })
@@ -51,6 +55,7 @@ class OrderController {
   // Criar novo registro
   async store(req: Request, res: Response) {
     const { products } = req.body
+    const userId = req.userId!
 
     if (!products) {
       return res.status(400).json({ error: 'All fields are required' })
@@ -59,7 +64,7 @@ class OrderController {
     const hasStock = async (products: ProductBody[]): Promise<{ result: boolean, error?: string }> => {
       for (const product of products) {
         const stock = await ProductsRepository
-          .findProductStock(product.productId) ?? { stock: 0, name: '' };
+          .findProductStock(product.productId, userId) ?? { stock: 0, name: '' };
         if (stock?.stock < product.quantity) {
           return { result: false, error: `Insufficient stock for product ${stock.name}` };
         }
@@ -73,12 +78,12 @@ class OrderController {
       return res.status(400).json({ error });
     }
 
-    const order = await OrdersRepository.create({ products })
+    const order = await OrdersRepository.create({ products }, userId)
 
     const adjustStock = async (products: ProductBody[]): Promise<void> => {
       for (const product of products) {
         const stock = await ProductsRepository
-          .findProductStock(product.productId) ?? { stock: 0 };
+          .findProductStock(product.productId, userId) ?? { stock: 0 };
 
         const newStock = stock?.stock - product.quantity ?? 0;
 
@@ -103,14 +108,15 @@ class OrderController {
   async update(req: Request, res: Response) {
     const { id } = req.params
     const { products } = req.body
+    const userId = req.userId!
 
     if (!products) {
       return res.status(400).json({ error: 'All fields are required' })
     }
 
     const order = await OrdersRepository.update(id, {
-      products
-    })
+      products,
+    }, userId)
 
     res.json(order)
   }
@@ -118,14 +124,15 @@ class OrderController {
   // Deletar um registro
   async delete(req: Request, res: Response) {
     const { id } = req.params
+    const userId = req.userId!
 
-    const orderExists = await OrdersRepository.findOne(id)
+    const orderExists = await OrdersRepository.findOne(id, userId)
 
     if (!orderExists) {
       return res.status(404).json({ error: 'Order not found' })
     }
 
-    await OrdersRepository.delete(id)
+    await OrdersRepository.delete(id, userId)
 
     res.sendStatus(204)
   }
@@ -133,8 +140,9 @@ class OrderController {
   // Deletar um produto de uma order existente
   async deleteProductFromOrder(req: Request, res: Response) {
     const { orderId, productId } = req.params
+    const userId = req.userId!
 
-    const orderExists = await OrdersRepository.findOne(orderId)
+    const orderExists = await OrdersRepository.findOne(orderId, userId)
 
     if (!orderExists) {
       return res.status(404).json({ error: 'Order not found' })
@@ -150,7 +158,7 @@ class OrderController {
       return res.status(400).json({ error: 'Order already delivered' })
     }
 
-    await OrdersRepository.deleteProductFromOrder(orderId, productId)
+    await OrdersRepository.deleteProductFromOrder(orderId, productId, userId)
 
     res.sendStatus(204)
   }
@@ -159,8 +167,9 @@ class OrderController {
   async changeStatus(req: Request, res: Response) {
     const { id } = req.params
     const { status } = req.body
+    const userId = req.userId!
 
-    const orderExists = await OrdersRepository.findOne(id)
+    const orderExists = await OrdersRepository.findOne(id, userId)
 
     if (!orderExists) {
       return res.status(404).json({ error: 'Order not found' })
@@ -170,7 +179,7 @@ class OrderController {
       return res.status(400).json({ error: 'Invalid status' })
     }
 
-    await OrdersRepository.changeStatus(id, status)
+    await OrdersRepository.changeStatus(id, status, userId)
 
     res.sendStatus(204)
   }
