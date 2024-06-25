@@ -21,6 +21,7 @@ export class AuthenticationMiddleware {
       const payload = verify(token, env.jwtSecret) as JwtPayload
 
       req.userId = payload.id as string
+      req.role = payload.role as string
 
       next()
     } catch {

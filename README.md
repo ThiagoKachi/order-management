@@ -49,3 +49,10 @@
 - Postgres SQL - Docker
 - Prisma ORM
 - JTW
+
+#### Extras
+- [x] Fazer docker-compose
+- [x] RBAC - Autorização por roles
+- [] Refresh Token
+- [] Refatorar **
+- [] Deploy

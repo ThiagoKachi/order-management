@@ -27,7 +27,7 @@ class AccountController {
     const accountData = {
       email,
       name,
-      password: hashedPassword
+      password: hashedPassword,
     } as AccountProps;
 
     const account = await AccountsRepository.create(accountData)
@@ -50,7 +50,14 @@ class AccountController {
       return res.status(400).json({ error: 'Invalid credentials.' })
     }
 
-    const accessToken = sign({ id: account.id }, env.jwtSecret, { expiresIn: '1d' })
+    const accessToken = sign(
+      {
+        id: account.id,
+        role: account.role
+      },
+      env.jwtSecret,
+      { expiresIn: '1d' }
+    )
 
     res.json({ accessToken })
   }

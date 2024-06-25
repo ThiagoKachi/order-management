@@ -9,7 +9,8 @@ class AccountsRepository {
       data: {
         name,
         email,
-        password
+        password,
+        role: 'CLIENT'
       }
     })
 
