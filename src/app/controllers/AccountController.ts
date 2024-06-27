@@ -3,7 +3,9 @@ import { Request, Response } from 'express';
 import { sign } from 'jsonwebtoken';
 import { env } from '../../app/config/env';
 
+import { EXP_TIME_IN_DAYS } from '../config/constants';
 import { accountsRepository as AccountsRepository } from '../repositories/AccountsRepository';
+import { refreshTokenRepository as RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
 
 export interface AccountProps {
   email: string
@@ -50,6 +52,9 @@ class AccountController {
       return res.status(400).json({ error: 'Invalid credentials.' })
     }
 
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + EXP_TIME_IN_DAYS);
+
     const accessToken = sign(
       {
         id: account.id,
@@ -59,7 +64,12 @@ class AccountController {
       { expiresIn: '1d' }
     )
 
-    res.json({ accessToken })
+    const { id } = await RefreshTokenRepository.create({
+      accountId: account.id,
+      expiresAt,
+    })
+
+    res.json({ accessToken, refreshToken: id })
   }
 }
 

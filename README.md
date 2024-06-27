@@ -53,6 +53,12 @@
 #### Extras
 - [x] Fazer docker-compose
 - [x] RBAC - Autorização por roles
-- [] Refresh Token
+- [x] Refresh Token
+- [] Swagger
 - [] Refatorar **
+  - Aplicar validações com ZOD
+  - Reduzir duplicidade de código
+  - Transformar Controllers em "static"
+  - Criar contratos
+  - Função / Classe para gerar Token (Reutilizável)
 - [] Deploy

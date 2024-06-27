@@ -5,6 +5,7 @@ import { categoryController as CategoryController } from "./app/controllers/Cate
 import { favoriteController as FavoriteController } from "./app/controllers/FavoriteController";
 import { orderController as OrderController } from "./app/controllers/OrderController";
 import { productController as ProductController } from "./app/controllers/ProductController";
+import { refreshTokenController as RefreshTokenController } from "./app/controllers/RefreshTokenController";
 
 import { AuthenticationMiddleware } from "./app/middlewares/AuthenticationMiddleware";
 import { AuthorizationMiddleware } from "./app/middlewares/AuthorizationMiddleware";
@@ -153,5 +154,8 @@ router.post("/auth/sign-in", AccountController.signIn);
 
 // Signup
 router.post("/auth/sign-up", AccountController.signUp);
+
+// Refresh Token
+router.post("/refresh-token", RefreshTokenController.handle);
 
 export default router;
