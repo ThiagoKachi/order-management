@@ -2,8 +2,8 @@ import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-class CategoriesRepository {
-  async findAll(orderBy = 'asc') {
+export class CategoriesRepository {
+  static findAll = async (orderBy = 'asc') => {
     const direction = orderBy === 'desc' ? 'desc' : 'asc'
     
     const categories = await prisma.category.findMany({
@@ -18,7 +18,7 @@ class CategoriesRepository {
     return categories
   }
 
-  async findOne(id: string) {    
+  static findOne = async (id: string) => {
     const categorie = await prisma.category.findUnique({
       where: {
         id,
@@ -32,7 +32,7 @@ class CategoriesRepository {
     return categorie
   }
 
-  async findByName(name: string) {    
+  static findByName = async (name: string) => {
     const categorie = await prisma.category.findUnique({
       where: {
         name,
@@ -42,7 +42,7 @@ class CategoriesRepository {
     return categorie
   }
 
-  async create(name: string) {    
+  static create = async (name: string) => {
     const categorie = await prisma.category.create({
       data: {
         name
@@ -52,7 +52,7 @@ class CategoriesRepository {
     return categorie
   }
 
-  async update(id: string, name: string) {    
+  static update = async (id: string, name: string) => {
     const categorie = await prisma.category.update({
       where: { id },
       data: {
@@ -63,7 +63,7 @@ class CategoriesRepository {
     return categorie
   }
 
-  async delete(id: string) {    
+  static delete = async (id: string) => {
     const categorie = await prisma.category.update({
       where: {
         id
@@ -76,5 +76,3 @@ class CategoriesRepository {
     return categorie
   }
 }
-
-export const categoriesRepository = new CategoriesRepository()

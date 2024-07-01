@@ -1,64 +1,111 @@
 import { Request, Response } from 'express';
 
+import z from 'zod';
 import { OrderStatus } from '../models/Order';
-import { ordersRepository as OrdersRepository } from '../repositories/OrdersRepository';
-import { productsRepository as ProductsRepository } from '../repositories/ProductsRepository';
+import { OrdersRepository } from '../repositories/OrdersRepository';
+import { ProductsRepository } from '../repositories/ProductsRepository';
 
-export interface OrderFilters {
-  direction: 'asc' | 'desc'
-  orderStatus: OrderStatus
-  orderId: string
-  pageIndex: string
-  pageSize: string
-}
+const ListOrdersSchema = z.object({
+  direction: z.enum(['asc', 'desc']),
+  orderStatus: z.enum(['PENDING', 'PREPARING', 'READY', 'DELIVERED']),
+  orderId: z.string(),
+  pageIndex: z.string().default('1'),
+  pageSize: z.string().default('20'),
+});
+
+const getOrDeleteOrdersSchema = z.object({
+  id: z.string(),
+});
+
+const createOrUpdateOrdersSchema = z.object({
+  products: z.array(z.object({
+    productId: z.string(),
+    quantity: z.number()
+  })),
+});
+
+const deleteProductFromOrdersSchema = z.object({
+  orderId: z.string(),
+  productId: z.string(),
+});
+
+const changeOrderStatusSchema = z.object({
+  status: z.enum(['PENDING', 'PREPARING', 'READY', 'DELIVERED']),
+});
 
 interface ProductBody {
   productId: string
   quantity: number
 }
 
-class OrderController {
+export class OrderController {
   // Listar todos os registros
-  async index(req: Request, res: Response) {
+  static index = async (req: Request, res: Response) => {
     const userId = req.userId!
 
-    const { direction, status, orderId, pageIndex, pageSize } = req.query
+    const result = ListOrdersSchema.safeParse(req.query);
 
-    const orderFilters = {
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { direction, orderStatus, orderId, pageIndex, pageSize } = result.data
+
+    const orders = await OrdersRepository.findAll({
       direction,
-      orderStatus: status,
+      orderStatus,
       orderId,
       pageIndex,
-      pageSize,
-    } as OrderFilters
+      pageSize
+    }, userId)
 
-    const orders = await OrdersRepository.findAll(orderFilters, userId)
-
-    res.json(orders)
+    res.status(200).json(orders)
   }
 
   // Obter um registro
-  async show(req: Request, res: Response) {
+  static show = async (req: Request, res: Response) => {
     const userId = req.userId!
 
-    const { id } = req.params
+    const result = getOrDeleteOrdersSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { id } = result.data
 
     const order = await OrdersRepository.findOne(id, userId)
 
     if (!order) {
-      return res.status(404).json({ error: 'Order not found' })
+      return res.status(404).json({ error: 'Order not found.' })
     }
 
-    return res.json(order)
+    return res.status(200).json(order)
   }
 
   // Criar novo registro
-  async store(req: Request, res: Response) {
-    const { products } = req.body
+  static store = async (req: Request, res: Response) => {
     const userId = req.userId!
 
+    const storeResult = createOrUpdateOrdersSchema.safeParse(req.body);
+
+    if (!storeResult.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: storeResult.error.issues
+      })
+    }
+
+    const { products } = storeResult.data
+
     if (!products) {
-      return res.status(400).json({ error: 'All fields are required' })
+      return res.status(400).json({ error: 'All fields are required.' })
     }
 
     const hasStock = async (products: ProductBody[]): Promise<{ result: boolean, error?: string }> => {
@@ -105,31 +152,51 @@ class OrderController {
   }
 
   // Editar um registro
-  async update(req: Request, res: Response) {
-    const { id } = req.params
-    const { products } = req.body
+  static update = async (req: Request, res: Response) => {
     const userId = req.userId!
+    const { id } = req.params
+
+    const storeResult = createOrUpdateOrdersSchema.safeParse(req.body);
+
+    if (!storeResult.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: storeResult.error.issues
+      })
+    }
+
+    const { products } = storeResult.data
 
     if (!products) {
-      return res.status(400).json({ error: 'All fields are required' })
+      return res.status(400).json({ error: 'All fields are required.' })
     }
 
     const order = await OrdersRepository.update(id, {
       products,
     }, userId)
 
-    res.json(order)
+    res.status(200).json(order)
   }
 
   // Deletar um registro
-  async delete(req: Request, res: Response) {
-    const { id } = req.params
+  static delete = async (req: Request, res: Response) => {
     const userId = req.userId!
+
+    const storeResult = getOrDeleteOrdersSchema.safeParse(req.params);
+
+    if (!storeResult.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: storeResult.error.issues
+      })
+    }
+
+    const { id } = storeResult.data;
 
     const orderExists = await OrdersRepository.findOne(id, userId)
 
     if (!orderExists) {
-      return res.status(404).json({ error: 'Order not found' })
+      return res.status(404).json({ error: 'Order not found.' })
     }
 
     await OrdersRepository.delete(id, userId)
@@ -138,24 +205,34 @@ class OrderController {
   }
 
   // Deletar um produto de uma order existente
-  async deleteProductFromOrder(req: Request, res: Response) {
-    const { orderId, productId } = req.params
+  static deleteProductFromOrder = async (req: Request, res: Response) => {
     const userId = req.userId!
+
+    const storeResult = deleteProductFromOrdersSchema.safeParse(req.params);
+
+    if (!storeResult.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: storeResult.error.issues
+      })
+    }
+
+    const { orderId, productId } = storeResult.data;
 
     const orderExists = await OrdersRepository.findOne(orderId, userId)
 
     if (!orderExists) {
-      return res.status(404).json({ error: 'Order not found' })
+      return res.status(404).json({ error: 'Order not found.' })
     }
 
     const productExists = orderExists.products.find(product => product.productId === productId)
 
     if (!productExists) {
-      return res.status(404).json({ error: 'Product not found in this order' })
+      return res.status(404).json({ error: 'Product not found in this order.' })
     }
 
     if (orderExists.status === 'DELIVERED') {
-      return res.status(400).json({ error: 'Order already delivered' })
+      return res.status(409).json({ error: 'Order already delivered.' })
     }
 
     await OrdersRepository.deleteProductFromOrder(orderId, productId, userId)
@@ -164,25 +241,33 @@ class OrderController {
   }
 
   // Atualizar o status
-  async changeStatus(req: Request, res: Response) {
-    const { id } = req.params
-    const { status } = req.body
+  static changeStatus = async (req: Request, res: Response) => {
     const userId = req.userId!
+    const { id } = req.params
+
+    const storeResult = changeOrderStatusSchema.safeParse(req.body);
+
+    if (!storeResult.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: storeResult.error.issues
+      })
+    }
+
+    const { status } = storeResult.data;
 
     const orderExists = await OrdersRepository.findOne(id, userId)
 
     if (!orderExists) {
-      return res.status(404).json({ error: 'Order not found' })
+      return res.status(404).json({ error: 'Order not found.' })
     }
 
     if (!(status in OrderStatus)) {
-      return res.status(400).json({ error: 'Invalid status' })
+      return res.status(400).json({ error: 'Invalid status.' })
     }
 
-    await OrdersRepository.changeStatus(id, status, userId)
+    await OrdersRepository.changeStatus(id, status as OrderStatus, userId)
 
     res.sendStatus(204)
   }
 }
-
-export const orderController = new OrderController()

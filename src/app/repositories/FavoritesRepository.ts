@@ -2,8 +2,8 @@ import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-class FavoritesRepository {
-  async findAll(orderBy = 'asc', userId: string) {
+export class FavoritesRepository {
+  static findAll = async (orderBy = 'asc', userId: string) => {
     const direction = orderBy === 'desc' ? 'desc' : 'asc'
     
     const favorites = await prisma.favorite.findMany({
@@ -33,7 +33,7 @@ class FavoritesRepository {
       }))
   }
 
-  async findOne(id: string, userId: string) {    
+  static findOne = async (id: string, userId: string) => {
     const product = await prisma.favoriteProduct.findFirst({
       where: {
         accountId: userId,
@@ -44,13 +44,13 @@ class FavoritesRepository {
     return product
   }
 
-  async isProductFavorited(productId: string, userId: string) {
+  static isProductFavorited = async (productId: string, userId: string) => {
     return await prisma.favoriteProduct.findFirst({
       where: { productId, accountId: userId },
     });
   }
 
-  async create(productId: string, userId: string) {   
+  static create = async (productId: string, userId: string) => {
     const favorite = await prisma.favorite.create({
       data: {
         accountId: userId,
@@ -74,7 +74,7 @@ class FavoritesRepository {
     return { favoriteId: favorite.id }
   }
 
-  async delete(id: string, userId: string) {
+  static delete = async (id: string, userId: string) => {
     const favoriteProduct = await prisma.favoriteProduct.findFirst({
       where: {
         productId: id,
@@ -94,5 +94,3 @@ class FavoritesRepository {
     return deletedFavoriteProduct
   }
 }
-
-export const favoritesRepository = new FavoritesRepository()

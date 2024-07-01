@@ -1,12 +1,25 @@
 import { Request, Response } from 'express';
 import { sign } from 'jsonwebtoken';
+import z from 'zod';
 import { EXP_TIME_IN_DAYS } from '../config/constants';
 import { env } from '../config/env';
-import { refreshTokenRepository as RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
+import { RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
 
-class RefreshTokenController {
-  async handle(req: Request, res: Response) {
-    const { refreshTokenId } = req.body
+const refreshTokenSchema = z.object({
+  refreshTokenId: z.string().uuid(),
+});
+
+export class RefreshTokenController {
+  static handle = async (req: Request, res: Response) => {
+    const result = refreshTokenSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        issues: result.error.issues
+      })
+    }
+
+    const { refreshTokenId } = result.data;
 
     const refreshToken = await RefreshTokenRepository.findById(refreshTokenId)
 
@@ -37,8 +50,6 @@ class RefreshTokenController {
       RefreshTokenRepository.deleteById(refreshToken.id),
     ]);
 
-    res.json({ accessToken, refreshToken: newRefreshToken.id })
+    res.status(200).json({ accessToken, refreshToken: newRefreshToken.id })
   }
 }
-
-export const refreshTokenController = new RefreshTokenController()

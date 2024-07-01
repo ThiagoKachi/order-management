@@ -1,35 +1,67 @@
 import { Request, Response } from 'express';
-import { productsRepository as ProductsRepository } from '../repositories/ProductsRepository';
+import { ProductsRepository } from '../repositories/ProductsRepository';
 
-import { favoritesRepository as FavoritesRepository } from '../repositories/FavoritesRepository';
+import z from 'zod';
+import { FavoritesRepository } from '../repositories/FavoritesRepository';
 
-class FavoriteController {
+const ListFavoritesSchema = z.object({
+  orderBy: z.string(),
+});
+
+
+const getFavoriteSchema = z.object({
+  productId: z.string(),
+});
+
+const deleteFavoriteSchema = z.object({
+  id: z.string(),
+});
+
+export class FavoriteController {
   // Listar todos os favoritos
-  async index(req: Request, res: Response) {
+  static index = async (req: Request, res: Response) => {
     const userId = req.userId!
+    const result = ListFavoritesSchema.safeParse(req.query);
 
-    const { orderBy } = req.query
-    const favorites = await FavoritesRepository.findAll(orderBy as string, userId)
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
 
-    res.json(favorites)
+    const { orderBy } = result.data
+
+    const favorites = await FavoritesRepository.findAll(orderBy, userId)
+
+    res.status(200).json(favorites)
   }
 
   // Adicionar novo favorito
-  async store(req: Request, res: Response) {
+  static store = async (req: Request, res: Response) => {
     const userId = req.userId!
 
-    const { productId } = req.body
+    const result = getFavoriteSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { productId } = result.data
 
     const productExists = await ProductsRepository.findOne(productId, userId)
 
     if (!productExists) {
-      return res.status(404).json({ error: 'Product not found!' })
+      return res.status(404).json({ error: 'Product not found.' })
     }
 
     const favoriteExists = await FavoritesRepository.isProductFavorited(productId, userId)
 
     if (favoriteExists) {
-      return res.status(404).json({ error: 'Product already favorited!' })
+      return res.status(409).json({ error: 'Product already favorited.' })
     }
 
     const product = await FavoritesRepository.create(productId, userId)
@@ -38,15 +70,24 @@ class FavoriteController {
   }
 
   // Deletar um favorito
-  async delete(req: Request, res: Response) {
+  static delete = async (req: Request, res: Response) => {
     const userId = req.userId!
 
-    const { id } = req.params
+    const result = deleteFavoriteSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { id } = result.data
 
     const favoriteExists = await FavoritesRepository.findOne(id, userId)
 
     if (!favoriteExists) {
-      return res.status(404).json({ error: 'Favorite product not found' })
+      return res.status(404).json({ error: 'Favorite product not found.' })
     }
 
     await FavoritesRepository.delete(id, userId)
@@ -54,5 +95,3 @@ class FavoriteController {
     res.sendStatus(204)
   }
 }
-
-export const favoriteController = new FavoriteController()

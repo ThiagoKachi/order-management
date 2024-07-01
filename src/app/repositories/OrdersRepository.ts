@@ -1,17 +1,24 @@
 import { PrismaClient } from "@prisma/client"
-import { OrderFilters } from "../controllers/OrderController"
 import { Order, OrderStatus } from "../models/Order"
 
 const prisma = new PrismaClient()
 
-class OrdersRepository {
-  async findAll({
+export interface OrderFilters {
+  direction: 'asc' | 'desc'
+  orderStatus: 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED'
+  orderId: string
+  pageIndex: string
+  pageSize: string
+}
+
+export class OrdersRepository {
+  static findAll = async ({
     direction = 'asc',
     orderStatus,
     orderId,
     pageIndex = '1',
     pageSize = '20'
-  }: OrderFilters, userId: string) {
+  }: OrderFilters, userId: string) => {
     const orderBy = direction === 'desc' ? 'desc' : 'asc'
     const orderIdNumber = orderId ? Number(orderId) : undefined
     
@@ -39,7 +46,7 @@ class OrdersRepository {
     return orders
   }
 
-  async findOne(id: string, userId: string) {    
+  static findOne = async (id: string, userId: string) => {
     const order = await prisma.order.findUnique({
       where: {
         accountId: userId,
@@ -58,7 +65,7 @@ class OrdersRepository {
     return order
   }
 
-  async create({ products }: Order, userId: string) {
+  static create = async ({ products }: Order, userId: string) => {
     const order = await prisma.order.create({
       data: {
         products: {
@@ -77,7 +84,7 @@ class OrdersRepository {
     return order
   }
 
-  async update(id: string, { products }: Order, userId: string) {   
+  static update = async (id: string, { products }: Order, userId: string) => {
     const order = await prisma.order.update({
       where: { id, accountId: userId },
       data: {
@@ -107,7 +114,7 @@ class OrdersRepository {
     return order
   }
 
-  async delete(id: string, userId: string) {    
+  static delete = async (id: string, userId: string) => {
     const order = await prisma.order.update({
       where: {
         accountId: userId,
@@ -121,7 +128,7 @@ class OrdersRepository {
     return order
   }
 
-  async deleteProductFromOrder(orderId: string, productId: string, userId: string) {    
+  static deleteProductFromOrder = async (orderId: string, productId: string, userId: string) => {
     const order = await prisma.order.update({
       where: {
         accountId: userId,
@@ -142,7 +149,7 @@ class OrdersRepository {
     return order
   }
 
-  async changeStatus(id: string, status: OrderStatus, userId: string) {    
+  static changeStatus = async (id: string, status: OrderStatus, userId: string) => {
     const order = await prisma.order.update({
       where: {
         accountId: userId,
@@ -156,5 +163,3 @@ class OrdersRepository {
     return order
   }
 }
-
-export const ordersRepository = new OrdersRepository()

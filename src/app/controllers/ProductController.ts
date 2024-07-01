@@ -1,77 +1,129 @@
 import { Request, Response } from 'express';
 
-import { ProductSearchField, productsRepository as ProductsRepository } from '../repositories/ProductsRepository';
+import z from 'zod';
+import { ProductsRepository } from '../repositories/ProductsRepository';
 
-export interface ProductFilters {
-  orderByField: ProductSearchField
-  direction: 'asc' | 'desc'
-  productName: string
-  pageIndex: string
-  pageSize: string
-}
+const ListProductsSchema = z.object({
+  orderByField: z.enum(['price', 'created_at']),
+  direction: z.enum(['asc', 'desc']),
+  productName: z.string().default(''),
+  pageIndex: z.string().default('1'),
+  pageSize: z.string().default('20'),
+});
 
-class ProductController {
+const getOrDeleteProductSchema = z.object({
+  id: z.string()
+});
+
+const createOrUpdateProductSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
+    price: z.number(),
+    categoryId: z.string(),
+    stock: z.number(),
+    image: z.string().optional(),
+    accountId: z.string()
+});
+
+export class ProductController {
   // Listar todos os registros
-  async index(req: Request, res: Response) {
+  static index = async (req: Request, res: Response) => {
     const userId = req.userId
+
+    const result = ListProductsSchema.safeParse(req.query);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
     
-    const { orderByField, direction, productName, pageIndex, pageSize } = req.query
+    const { orderByField, direction, productName, pageIndex, pageSize } = result.data
 
-    const filters = {
-      orderByField: orderByField,
-      direction: direction,
-      productName: productName,
+    const products = await ProductsRepository.findAll({
+      orderByField,
+      direction,
+      productName,
       pageIndex,
-      pageSize,
-    } as ProductFilters
+      pageSize
+    }, userId!)
 
-    const products = await ProductsRepository.findAll(filters, userId!)
-
-    res.json(products)
+    res.status(200).json(products)
   }
 
   // Obter um registro
-  async show(req: Request, res: Response) {
+  static show = async (req: Request, res: Response) => {
     const userId = req.userId!
 
-    const { id } = req.params
+    const result = getOrDeleteProductSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { id } = result.data
 
     const product = await ProductsRepository.findOne(id, userId)
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' })
+      return res.status(404).json({ error: 'Product not found.' })
     }
 
-    return res.json(product)
+    return res.status(200).json(product)
   }
 
   // Obter o estoque de um produto
-  async productStock(req: Request, res: Response) {
+  static productStock = async (req: Request, res: Response) => {
     const userId = req.userId!
-    const { id } = req.params
+
+    const result = getOrDeleteProductSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { id } = result.data
 
     const product = await ProductsRepository.findProductStock(id, userId)
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' })
+      return res.status(404).json({ error: 'Product not found.' })
     }
 
-    return res.json(product)
+    return res.status(200).json(product)
   }
 
   // Criar novo registro
-  async store(req: Request, res: Response) {
+  static store = async (req: Request, res: Response) => {
     const userId = req.userId!
-    const { name, description, price, categoryId, image, stock } = req.body
+
+    const result = createOrUpdateProductSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+    
+    const { name, description, price, categoryId, image, stock } = result.data
 
     const productExists = await ProductsRepository.findByName(name, userId)
 
     if (productExists) {
-      return res.status(404).json({ error: 'Product already in use!' })
+      return res.status(409).json({ error: 'Product already in use.' })
     }
 
     if (!name || !description || !price || !categoryId || !stock) {
-      return res.status(400).json({ error: 'All fields are required' })
+      return res.status(400).json({ error: 'All fields are required.' })
     }
 
     const product = await ProductsRepository.create({
@@ -88,15 +140,25 @@ class ProductController {
   }
 
   // Editar um registro
-  async update(req: Request, res: Response) {
+  static update = async (req: Request, res: Response) => {
     const { id } = req.params
     const userId = req.userId!
-    const { name, description, price, categoryId, image, stock } = req.body
+
+    const result = createOrUpdateProductSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { name, description, price, categoryId, image, stock } = result.data
 
     const productExists = await ProductsRepository.findOne(id, userId)
 
     if (!productExists) {
-      return res.status(404).json({ error: 'Product not found' })
+      return res.status(404).json({ error: 'Product not found.' })
     }
 
     if (!name || !description || !price || !categoryId || !stock) {
@@ -113,18 +175,28 @@ class ProductController {
       accountId: userId!
     })
 
-    res.json(product)
+    res.status(200).json(product)
   }
 
   // Deletar um registro
-  async delete(req: Request, res: Response) {
+  static delete = async (req: Request, res: Response) => {
     const userId = req.userId!
-    const { id } = req.params
+
+    const result = getOrDeleteProductSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+    
+    const { id } = result.data
 
     const productExists = await ProductsRepository.findOne(id, userId)
 
     if (!productExists) {
-      return res.status(404).json({ error: 'Product not found' })
+      return res.status(404).json({ error: 'Product not found.' })
     }
 
     await ProductsRepository.delete(id, userId)
@@ -132,5 +204,3 @@ class ProductController {
     res.sendStatus(204)
   }
 }
-
-export const productController = new ProductController()

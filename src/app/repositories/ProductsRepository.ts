@@ -1,19 +1,26 @@
 import { PrismaClient } from "@prisma/client"
-import { ProductFilters } from "../controllers/ProductController"
 import { Product } from "../models/Product"
+
+export interface ProductFilters {
+  orderByField: ProductSearchField
+  direction: 'asc' | 'desc'
+  productName: string
+  pageIndex: string
+  pageSize: string
+}
 
 export type ProductSearchField = 'created_at' | 'price'
 
 const prisma = new PrismaClient()
 
-class ProductsRepository {
-  async findAll({
+export class ProductsRepository {
+  static findAll = async ({
     orderByField = 'created_at',
     direction = 'asc',
     productName = '',
     pageIndex = '1',
     pageSize = '20',
-  }: ProductFilters, userId: string) {
+  }: ProductFilters, userId: string) => {
     const directionSearch = direction === 'desc' ? 'desc' : 'asc'
     const orderBy = orderByField === 'price' ? 'price' : 'created_at'
     
@@ -35,7 +42,7 @@ class ProductsRepository {
     return products
   }
 
-  async findOne(id: string, userId: string) {    
+  static findOne = async (id: string, userId: string) => {
     const product = await prisma.product.findUnique({
       where: {
         accountId: userId,
@@ -47,7 +54,7 @@ class ProductsRepository {
     return product
   }
 
-  async findProductStock(id: string, userId: string) {    
+  static findProductStock = async (id: string, userId: string) => {
     const product = await prisma.product.findFirst({
       where: {
         id,
@@ -62,7 +69,7 @@ class ProductsRepository {
     return product
   }
 
-  async updateStock(id: string, newStock: number) {   
+  static updateStock = async (id: string, newStock: number) => {
     const product = await prisma.product.update({
       where: {
         id,
@@ -75,7 +82,7 @@ class ProductsRepository {
     return product
   }
 
-  async findByName(name: string, userId: string) {    
+  static findByName = async (name: string, userId: string) => { 
     const product = await prisma.product.findUnique({
       where: {
         accountId: userId,
@@ -86,7 +93,7 @@ class ProductsRepository {
     return product
   }
 
-  async create({ name, description, price, categoryId, image, stock, accountId }: Product) {
+  static create = async ({ name, description, price, categoryId, image, stock, accountId }: Product) => {
     const product = await prisma.product.create({
       data: {
         name,
@@ -102,7 +109,7 @@ class ProductsRepository {
     return product
   }
 
-  async update(id: string, data: Product) {   
+  static update = async (id: string, data: Product) => {
     const categorie = await prisma.product.update({
       where: { id, accountId: data.accountId },
       data,
@@ -111,7 +118,7 @@ class ProductsRepository {
     return categorie
   }
 
-  async delete(id: string, userId: string) {    
+  static delete = async (id: string, userId: string) => {
     const product = await prisma.product.update({
       where: {
         accountId: userId,
@@ -125,5 +132,3 @@ class ProductsRepository {
     return product
   }
 }
-
-export const productsRepository = new ProductsRepository()

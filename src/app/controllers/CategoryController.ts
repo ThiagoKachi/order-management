@@ -1,38 +1,78 @@
 import { Request, Response } from 'express';
 
-import { categoriesRepository as CategoriesRepository } from '../repositories/CategoriesRepository';
+import z from 'zod';
+import { CategoriesRepository } from '../repositories/CategoriesRepository';
 
-class CategoryController {
+const ListCategoriesSchema = z.object({
+  orderBy: z.string(),
+});
+
+const getOrDeleteCategoriesSchema = z.object({
+  id: z.string(),
+});
+
+const createOrUpdateCategoriesSchema = z.object({
+  name: z.string(),
+});
+
+export class CategoryController {
   // Listar todos os registros
-  async index(req: Request, res: Response) {
-    const { orderBy } = req.query
+  static index = async (req: Request, res: Response) => {
+    const result = ListCategoriesSchema.safeParse(req.query);
 
-    const categories = await CategoriesRepository.findAll(orderBy as string)
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
 
-    res.json(categories)
+    const { orderBy } = result.data
+
+    const categories = await CategoriesRepository.findAll(orderBy)
+
+    res.status(200).json(categories)
   }
 
   // Obter um registro
-  async show(req: Request, res: Response) {
-    const { id } = req.params
+  static show = async (req: Request, res: Response) => {
+    const result = getOrDeleteCategoriesSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { id } = result.data
 
     const categorie = await CategoriesRepository.findOne(id)
 
     if (!categorie) {
-      return res.status(404).json({ error: 'Categorie not found' })
+      return res.status(404).json({ error: 'Categorie not found.' })
     }
 
-    return res.json(categorie)
+    return res.status(200).json(categorie)
   }
 
   // Criar novo registro
-  async store(req: Request, res: Response) {
-    const { name } = req.body
+  static store = async (req: Request, res: Response) => {
+    const result = createOrUpdateCategoriesSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { name } = result.data
 
     const categoryExists = await CategoriesRepository.findByName(name)
 
     if (categoryExists) {
-      return res.status(404).json({ error: 'Category already in use!' })
+      return res.status(409).json({ error: 'Category already in use.' })
     }
 
     if (!name) {
@@ -45,33 +85,51 @@ class CategoryController {
   }
 
   // Editar um registro
-  async update(req: Request, res: Response) {
+  static update = async (req: Request, res: Response) => {
+    const result = createOrUpdateCategoriesSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
     const { id } = req.params
-    const { name } = req.body
+    const { name } = result.data
 
     const categoryExists = await CategoriesRepository.findByName(name)
 
     if (categoryExists) {
-      return res.status(404).json({ error: 'Category already in use!' })
+      return res.status(409).json({ error: 'Category already in use.' })
     }
 
     if (!name) {
-      return res.status(400).json({ error: 'Name is required' })
+      return res.status(400).json({ error: 'Name is required.' })
     }
 
     const category = await CategoriesRepository.update(id, name)
 
-    res.json(category)
+    res.status(200).json(category)
   }
 
   // Deletar um registro
-  async delete(req: Request, res: Response) {
-    const { id } = req.params
+  static delete = async (req: Request, res: Response) => {
+    const result = getOrDeleteCategoriesSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Validation error',
+        issues: result.error.issues
+      })
+    }
+
+    const { id } = result.data
 
     const categoryExists = await CategoriesRepository.findOne(id)
 
     if (!categoryExists) {
-      return res.status(404).json({ error: 'Category not found' })
+      return res.status(404).json({ error: 'Category not found.' })
     }
 
     await CategoriesRepository.delete(id)
@@ -79,5 +137,3 @@ class CategoryController {
     res.sendStatus(204)
   }
 }
-
-export const categoryController = new CategoryController()

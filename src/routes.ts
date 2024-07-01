@@ -1,11 +1,11 @@
 import { Router } from "express";
 
-import { accountController as AccountController } from "./app/controllers/AccountController";
-import { categoryController as CategoryController } from "./app/controllers/CategoryController";
-import { favoriteController as FavoriteController } from "./app/controllers/FavoriteController";
-import { orderController as OrderController } from "./app/controllers/OrderController";
-import { productController as ProductController } from "./app/controllers/ProductController";
-import { refreshTokenController as RefreshTokenController } from "./app/controllers/RefreshTokenController";
+import { AccountController } from "./app/controllers/AccountController";
+import { CategoryController } from "./app/controllers/CategoryController";
+import { FavoriteController } from "./app/controllers/FavoriteController";
+import { OrderController } from "./app/controllers/OrderController";
+import { ProductController } from "./app/controllers/ProductController";
+import { RefreshTokenController } from "./app/controllers/RefreshTokenController";
 
 import { AuthenticationMiddleware } from "./app/middlewares/AuthenticationMiddleware";
 import { AuthorizationMiddleware } from "./app/middlewares/AuthorizationMiddleware";

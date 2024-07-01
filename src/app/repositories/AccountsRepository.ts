@@ -1,10 +1,15 @@
-import { PrismaClient } from "@prisma/client"
-import { AccountProps } from "../controllers/AccountController"
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient()
 
-class AccountsRepository {
-  async create({ email, name, password }: AccountProps) {    
+interface ICreateDTO {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export class AccountsRepository {
+  static create = async ({ email, name, password }: ICreateDTO) => {
     const account = await prisma.account.create({
       data: {
         name,
@@ -17,7 +22,7 @@ class AccountsRepository {
     return account
   }
 
-  async findByEmail(email: string) {    
+  static findByEmail = async (email: string) => {
     const account = await prisma.account.findUnique({
       where: {
         email,
@@ -27,5 +32,3 @@ class AccountsRepository {
     return account
   }
 }
-
-export const accountsRepository = new AccountsRepository()

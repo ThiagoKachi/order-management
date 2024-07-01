@@ -3,8 +3,8 @@ import { RefreshTokenProps } from "../models/RefreshToken"
 
 const prisma = new PrismaClient()
 
-class RefreshTokenRepository {
-  async findById(id: string) {    
+export class RefreshTokenRepository {
+  static findById = async(id: string) => {
     const refreshToken = await prisma.refreshToken.findUnique({
       where: {
         id,
@@ -17,7 +17,7 @@ class RefreshTokenRepository {
     return refreshToken
   }
 
-  async create({ accountId, expiresAt }: RefreshTokenProps) {    
+  static create = async({ accountId, expiresAt }: RefreshTokenProps) => {
     const refreshToken = await prisma.refreshToken.create({
       data: {
         accountId,
@@ -28,7 +28,7 @@ class RefreshTokenRepository {
     return refreshToken
   }
 
-  async deleteById(id: string) {    
+  static deleteById = async(id: string) => {
     const refreshToken = await prisma.refreshToken.delete({
       where: {
         id,
@@ -38,5 +38,3 @@ class RefreshTokenRepository {
     return refreshToken
   }
 }
-
-export const refreshTokenRepository = new RefreshTokenRepository()
