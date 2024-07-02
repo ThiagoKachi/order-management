@@ -20,6 +20,7 @@ enum StatusType {
   PREPARING
   READY
   DELIVERED
+  CANCELLED
 
   @@map("status_type")
 }

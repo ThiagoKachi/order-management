@@ -4,8 +4,8 @@ import z from 'zod';
 import { ProductsRepository } from '../repositories/ProductsRepository';
 
 const ListProductsSchema = z.object({
-  orderByField: z.enum(['price', 'created_at']),
-  direction: z.enum(['asc', 'desc']),
+  orderByField: z.enum(['price', 'created_at']).default('created_at'),
+  direction: z.enum(['asc', 'desc']).default('asc'),
   productName: z.string().default(''),
   pageIndex: z.string().default('1'),
   pageSize: z.string().default('20'),
@@ -16,14 +16,14 @@ const getOrDeleteProductSchema = z.object({
 });
 
 const createOrUpdateProductSchema = z.object({
-    id: z.string(),
+    id: z.string().optional(),
     name: z.string(),
     description: z.string(),
     price: z.number(),
     categoryId: z.string(),
     stock: z.number(),
     image: z.string().optional(),
-    accountId: z.string()
+    accountId: z.string().optional(),
 });
 
 export class ProductController {

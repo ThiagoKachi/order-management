@@ -6,9 +6,9 @@ import { OrdersRepository } from '../repositories/OrdersRepository';
 import { ProductsRepository } from '../repositories/ProductsRepository';
 
 const ListOrdersSchema = z.object({
-  direction: z.enum(['asc', 'desc']),
-  orderStatus: z.enum(['PENDING', 'PREPARING', 'READY', 'DELIVERED']),
-  orderId: z.string(),
+  direction: z.enum(['asc', 'desc']).default('asc'),
+  orderStatus: z.enum(['PENDING', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED']).optional(),
+  orderId: z.string().optional(),
   pageIndex: z.string().default('1'),
   pageSize: z.string().default('20'),
 });
@@ -171,11 +171,45 @@ export class OrderController {
       return res.status(400).json({ error: 'All fields are required.' })
     }
 
+    const hasStock = async (products: ProductBody[]): Promise<{ result: boolean, error?: string }> => {
+      for (const product of products) {
+        const stock = await ProductsRepository
+          .findProductStock(product.productId, userId) ?? { stock: 0, name: '' };
+        if (stock?.stock < product.quantity) {
+          return { result: false, error: `Insufficient stock for product ${stock.name}` };
+        }
+      }
+      return { result: true };
+    };
+
+    const { result, error } = await hasStock(products);
+
+    if (!result) {
+      return res.status(400).json({ error });
+    }
+
     const order = await OrdersRepository.update(id, {
       products,
     }, userId)
 
-    res.status(200).json(order)
+    const adjustStock = async (products: ProductBody[]): Promise<void> => {
+      for (const product of products) {
+        const stock = await ProductsRepository
+          .findProductStock(product.productId, userId) ?? { stock: 0 };
+
+        const newStock = stock?.stock - product.quantity ?? 0;
+
+        await ProductsRepository.updateStock(product.productId, newStock);
+      }
+    };
+
+    try {
+      await adjustStock(products);
+  
+      res.status(200).json(order)
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to adjust stock after updating order." })
+    }
   }
 
   // Deletar um registro
@@ -193,13 +227,17 @@ export class OrderController {
 
     const { id } = storeResult.data;
 
-    const orderExists = await OrdersRepository.findOne(id, userId)
+    const order = await OrdersRepository.findOne(id, userId)
 
-    if (!orderExists) {
+    if (!order) {
       return res.status(404).json({ error: 'Order not found.' })
     }
 
-    await OrdersRepository.delete(id, userId)
+    await OrdersRepository.changeStatus(id, 'CANCELLED' as OrderStatus, userId)
+
+    order.products.forEach(async product => {
+      await ProductsRepository.updateStock(product.productId, product.quantity)
+    })
 
     res.sendStatus(204)
   }

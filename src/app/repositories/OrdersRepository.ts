@@ -5,8 +5,8 @@ const prisma = new PrismaClient()
 
 export interface OrderFilters {
   direction: 'asc' | 'desc'
-  orderStatus: 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED'
-  orderId: string
+  orderStatus?: 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED'
+  orderId?: string
   pageIndex: string
   pageSize: string
 }

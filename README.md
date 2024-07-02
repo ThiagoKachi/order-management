@@ -54,13 +54,6 @@
 - [x] Fazer docker-compose
 - [x] RBAC - Autorização por roles
 - [x] Refresh Token
-- [] Refatorar **
-  - Transformar Controllers em "static" ✅
-  - Aplicar validações com ZOD 🔵 **Falta testar**
-  - Criar Factories
-  - Criar UseCases
-  - Reduzir duplicidade de código
-  - Criar contratos
-  - Função / Classe para gerar Token (Reutilizável)
+- [x] Refatorar
 - [] Swagger
 - [] Deploy
